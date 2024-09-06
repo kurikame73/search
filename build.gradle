@@ -52,6 +52,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.mockito:mockito-core'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
+
 }
 
 tasks.named('test') {
