@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(indexName = "items")
-public class ProductSearchEntity {
+public class ItemSearchEntity {
 
     private Long id;  // 상품 ID
 
