@@ -81,16 +81,16 @@ class SearchServiceTest {
         log.info("ObjectMapper가 JSON을 ProductSearchEntity로 매핑하도록 모킹");
 
         // ObjectMapper가 JSON을 ProductSearchEntity로 매핑하도록 설정
-        ProductSearchEntity product = new ProductSearchEntity();
+        ItemSearchEntity product = new ItemSearchEntity();
         product.setItemName("Test Item");
         product.setPrice(200.0);
-        when(objectMapper.readValue(anyString(), eq(ProductSearchEntity.class))).thenReturn(product);
+        when(objectMapper.readValue(anyString(), eq(ItemSearchEntity.class))).thenReturn(product);
 
         log.info("searchProducts 실행 - query: {}, category: {}, minPrice: {}, maxPrice: {}, sortBy: {}",
                 query, category, minPrice, maxPrice, sortBy);
 
         // when
-        List<ProductSearchEntity> results = searchService.searchProducts(query, category, minPrice, maxPrice, sortBy);
+        List<ItemSearchEntity> results = searchService.searchProducts(query, category, minPrice, maxPrice, sortBy);
 
         log.info("검색 결과 크기: {}", results.size());
         log.info("검색 결과 데이터: {}", results);
@@ -102,7 +102,7 @@ class SearchServiceTest {
 
         // 상호작용 검증
         verify(client, times(1)).search(any(SearchRequest.class), eq(RequestOptions.DEFAULT));
-        verify(objectMapper, times(1)).readValue(anyString(), eq(ProductSearchEntity.class));
+        verify(objectMapper, times(1)).readValue(anyString(), eq(ItemSearchEntity.class));
 
         // SearchRequest 검증을 위한 로그 추가
         ArgumentCaptor<SearchRequest> searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
