@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -13,11 +14,14 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.xcontent.XContentType;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -100,35 +104,29 @@ public class SearchService {
         return products;
     }
 
-    public void handleItemChangeEvent(ItemChangeEvent event) throws IOException {
-        log.info("Handling Item Change Event: {}", event);
+    @KafkaListener(topics = "item-updates", groupId = "search-service")
+    public void consumeItemUpdate(String message) {
+        try {
+            Map<String, Object> itemMap = objectMapper.readValue(message, Map.class);
+            updateSearchIndex(itemMap);
+        } catch (Exception e) {
+            // 로깅 및 예외 처리
+            System.err.println("Error processing Kafka message: " + e.getMessage());
+        }
+    }
 
-        Function<ItemChangeEvent, IndexRequest> buildIndexRequest = e -> new IndexRequest("items")
-                .id(e.getItemId().toString())
-                .source("id", e.getItemId(),
-                        "itemName", e.getItemName(),
-                        "categoryName", e.getCategoryName(),
-                        "brand", e.getBrand(),
-                        "price", e.getItemPrice()
-//                        "stockQuantity", e.g(),
-//                        "rating", e.getRating(),
-//                        "sales", e.getSales(),
-//                        "isOnPromotion", e.getIsOnPromotion(),
-//                        "searchKeywords", e.getSearchKeywords(),
-//                        "status", e.getStatus(),
-//                        "detailImages", e.getDetailImages());
-                );
-
-        Consumer<IndexRequest> indexItem = request -> {
-            try {
-                client.index(request, RequestOptions.DEFAULT);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
-
-        Optional.ofNullable(event)
-                .map(buildIndexRequest)
-                .ifPresent(indexItem);
+    private void updateSearchIndex(Map<String, Object> item) throws IOException {
+        String itemId = item.get("id").toString();
+        IndexRequest indexRequest = new IndexRequest("items")
+                .id(itemId)
+                .source(objectMapper.writeValueAsString(item), XContentType.JSON);
+        log.info("Created IndexRequest: {}", indexRequest.toString());
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+        log.info("Search index updated for item: {}. Result: {}, Version: {}, Seqno: {}, Primary term: {}",
+                itemId,
+                indexResponse.getResult(),
+                indexResponse.getVersion(),
+                indexResponse.getSeqNo(),
+                indexResponse.getPrimaryTerm());
     }
 }
