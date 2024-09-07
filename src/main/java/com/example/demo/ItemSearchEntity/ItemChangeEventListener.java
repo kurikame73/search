@@ -12,11 +12,4 @@ import java.io.IOException;
 @Slf4j
 public class ItemChangeEventListener {
 
-    private SearchService searchService;
-
-    @KafkaListener(topics = "item-events", groupId = "search-group")
-    public void listenItemEvents(ItemChangeEvent event) throws IOException {
-        log.info("Event Received: {}", event);
-        searchService.handleItemChangeEvent(event);
-    }
 }
